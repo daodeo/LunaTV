@@ -113,6 +113,15 @@ export interface AdminConfig {
     alternativeApiUrl: string;           // 备用API地址（私密）
     enableAlternative: boolean;          // 是否启用备用API
   };
+  OfflineDownloadConfig?: {
+    enabled: boolean;                    // 是否启用离线下载功能
+    downloadDir: string;                 // 下载目录路径（服务器端）
+    enableClientDownload: boolean;       // 是否启用客户端M3U8下载
+    enableServerDownload: boolean;       // 是否启用服务器端离线下载
+    maxConcurrentDownloads: number;      // 最大并发下载任务数
+    segmentConcurrency: number;          // 片段下载并发数
+    maxRetries: number;                  // 最大重试次数
+  };
 }
 
 export interface AdminConfigResult {

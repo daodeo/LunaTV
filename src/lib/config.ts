@@ -439,6 +439,19 @@ export async function configSelfCheck(adminConfig: AdminConfig): Promise<AdminCo
     };
   }
 
+  // 确保离线下载配置有默认值
+  if (!adminConfig.OfflineDownloadConfig) {
+    adminConfig.OfflineDownloadConfig = {
+      enabled: false,                                   // 默认关闭
+      downloadDir: './data/downloads',                  // 默认下载目录
+      enableClientDownload: true,                       // 默认启用客户端下载
+      enableServerDownload: false,                      // 默认关闭服务器端下载（需要管理员权限）
+      maxConcurrentDownloads: 3,                        // 默认最多3个并发任务
+      segmentConcurrency: 6,                            // 默认6个片段并发
+      maxRetries: 3,                                    // 默认最多重试3次
+    };
+  }
+
   // 站长变更自检
   const ownerUser = process.env.USERNAME;
 
