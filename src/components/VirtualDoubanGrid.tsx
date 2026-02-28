@@ -190,6 +190,9 @@ export const VirtualDoubanGrid = React.forwardRef<VirtualDoubanGridRef, VirtualD
         overscan={{ main: OVERSCAN, reverse: Math.round(OVERSCAN * 0.85) }}
         increaseViewportBy={{ top: Math.round(OVERSCAN * 0.45), bottom: Math.round(OVERSCAN * 0.75) }}
         endReached={stableEndReached}
+        atBottomStateChange={(atBottom) => {
+          console.log('[atBottom]', atBottom);
+        }}
         components={{
           List: ListContainer,
           Item: ItemContainer,
