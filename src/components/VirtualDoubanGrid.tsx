@@ -87,7 +87,7 @@ export const VirtualDoubanGrid = React.forwardRef<VirtualDoubanGridRef, VirtualD
     const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
 
     useEffect(() => {
-      setScrollParent(document.body);
+      setScrollParent(document.documentElement as HTMLElement);
     }, []);
 
     const imagesToPreload = useMemo(() => {
