@@ -85,6 +85,19 @@ export const VirtualDoubanGrid = React.forwardRef<VirtualDoubanGridRef, VirtualD
   ) => {
     const virtuosoRef = useRef<VirtuosoGridHandle>(null);
 
+    // Keep latest values in refs so endReached callback stays stable.
+    // A stable callback reference prevents react-urx from re-subscribing
+    // the endReached eventHandler on every render, which would reset its
+    // distinctUntilChanged state and cause it to skip subsequent triggers.
+    const hasMoreRef = useRef(hasMore);
+    const onLoadMoreRef = useRef(onLoadMore);
+    hasMoreRef.current = hasMore;
+    onLoadMoreRef.current = onLoadMore;
+
+    const stableEndReached = useCallback(() => {
+      if (hasMoreRef.current) onLoadMoreRef.current();
+    }, []);
+
     const imagesToPreload = useMemo(() => {
       return doubanData
         .map((item) => item.poster ? processImageUrl(item.poster) : '')
@@ -175,10 +188,7 @@ export const VirtualDoubanGrid = React.forwardRef<VirtualDoubanGridRef, VirtualD
         initialItemCount={doubanData.length || 25}
         overscan={{ main: OVERSCAN, reverse: Math.round(OVERSCAN * 0.85) }}
         increaseViewportBy={{ top: Math.round(OVERSCAN * 0.45), bottom: Math.round(OVERSCAN * 0.75) }}
-        endReached={(index) => {
-          console.log('[endReached]', { index, hasMore, isLoadingMore, total: doubanData.length });
-          if (hasMore) onLoadMore();
-        }}
+        endReached={stableEndReached}
         components={{
           List: ListContainer,
           Item: ItemContainer,
