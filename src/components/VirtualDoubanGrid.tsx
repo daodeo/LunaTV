@@ -176,7 +176,7 @@ export const VirtualDoubanGrid = React.forwardRef<VirtualDoubanGridRef, VirtualD
         overscan={{ main: OVERSCAN, reverse: Math.round(OVERSCAN * 0.85) }}
         increaseViewportBy={{ top: Math.round(OVERSCAN * 0.45), bottom: Math.round(OVERSCAN * 0.75) }}
         endReached={() => {
-          if (hasMore && !isLoadingMore) onLoadMore();
+          if (hasMore) onLoadMore();
         }}
         components={{
           List: ListContainer,
