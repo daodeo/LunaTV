@@ -95,6 +95,7 @@ export const VirtualDoubanGrid = React.forwardRef<VirtualDoubanGridRef, VirtualD
     onLoadMoreRef.current = onLoadMore;
 
     const stableEndReached = useCallback(() => {
+      console.log('[stableEndReached] called, hasMore:', hasMoreRef.current, 'total:', onLoadMoreRef.current.length);
       if (hasMoreRef.current) onLoadMoreRef.current();
     }, []);
 

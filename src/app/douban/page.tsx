@@ -888,6 +888,7 @@ function DoubanPageClient() {
 
   // 处理虚拟化组件的加载更多请求
   const handleVirtualLoadMore = useCallback(() => {
+    console.log('[loadMore] hasMore:', hasMore, 'isLoadingMoreRef:', isLoadingMoreRef.current, 'page:', currentPage);
     if (hasMore && !isLoadingMoreRef.current) {
       isLoadingMoreRef.current = true;
       setCurrentPage(prev => prev + 1);
