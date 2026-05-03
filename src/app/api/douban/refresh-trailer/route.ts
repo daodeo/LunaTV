@@ -4,8 +4,27 @@ import { recordRequest } from '@/lib/performance-monitor';
 
 /**
  * 刷新过期的 Douban trailer URL
- * 不使用任何缓存，直接调用豆瓣移动端API获取最新URL
+ * 使用服务端内存缓存，避免多个用户重复请求豆瓣
  */
+
+// 服务端缓存：存储 trailer URL
+// 格式: { [doubanId]: { url: string, timestamp: number } }
+const trailerCache = new Map<string, { url: string; timestamp: number }>();
+const CACHE_TTL = 2 * 60 * 60 * 1000; // 2小时缓存（客户端检测到过期时会主动清除）
+
+// 清理过期缓存
+function cleanExpiredCache() {
+  const now = Date.now();
+  for (const [id, data] of trailerCache.entries()) {
+    if (now - data.timestamp > CACHE_TTL) {
+      trailerCache.delete(id);
+      console.log(`[refresh-trailer] 清理过期缓存: ${id}`);
+    }
+  }
+}
+
+// 每小时清理一次过期缓存
+setInterval(cleanExpiredCache, 60 * 60 * 1000);
 
 // 带重试的获取函数
 async function fetchTrailerWithRetry(id: string, retryCount = 0): Promise<string | null> {
@@ -140,8 +159,52 @@ export async function GET(request: Request) {
     return NextResponse.json(errorResponse, { status: 400 });
   }
 
+  // 🔥 检查服务端缓存
+  const cached = trailerCache.get(id);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    console.log(`[refresh-trailer] 使用缓存的 trailer URL: ${id}`);
+
+    const cachedResponse = {
+      code: 200,
+      message: '获取成功（缓存）',
+      data: {
+        trailerUrl: cached.url,
+      },
+    };
+    const cachedSize = Buffer.byteLength(JSON.stringify(cachedResponse), 'utf8');
+
+    recordRequest({
+      timestamp: startTime,
+      method: 'GET',
+      path: '/api/douban/refresh-trailer',
+      statusCode: 200,
+      duration: Date.now() - startTime,
+      memoryUsed: (process.memoryUsage().heapUsed - startMemory) / 1024 / 1024,
+      dbQueries: 0,
+      requestSize: 0,
+      responseSize: cachedSize,
+    });
+
+    return NextResponse.json(cachedResponse, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
+  }
+
   try {
     const trailerUrl = await fetchTrailerWithRetry(id);
+
+    // 🔥 存入服务端缓存
+    if (trailerUrl) {
+      trailerCache.set(id, {
+        url: trailerUrl,
+        timestamp: Date.now(),
+      });
+      console.log(`[refresh-trailer] 缓存 trailer URL: ${id}`);
+    }
 
     const successResponse = {
       code: 200,
@@ -166,7 +229,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json(successResponse, {
         headers: {
-          // 不缓存这个 API 的响应
           'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
           'Expires': '0',
@@ -268,4 +330,28 @@ export async function GET(request: Request) {
 
     return NextResponse.json(unknownErrorResponse, { status: 500 });
   }
+}
+
+// DELETE方法：清除服务端缓存
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+
+  if (!id) {
+    return NextResponse.json({
+      code: 400,
+      message: '缺少必要参数: id',
+      error: 'MISSING_PARAMETER',
+    }, { status: 400 });
+  }
+
+  // 清除服务端缓存
+  const deleted = trailerCache.delete(id);
+  console.log(`[refresh-trailer] 清除服务端缓存: ${id}, 结果: ${deleted ? '成功' : '不存在'}`);
+
+  return NextResponse.json({
+    code: 200,
+    message: '清除成功',
+    data: { deleted },
+  });
 }

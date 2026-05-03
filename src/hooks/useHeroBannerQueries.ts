@@ -107,6 +107,7 @@ export function useRefreshTrailerUrlMutation() {
 /**
  * Clear a specific trailer URL from cache
  * Used when a previously refreshed URL also expires (403)
+ * Clears both localStorage AND server-side cache
  */
 export function useClearTrailerUrlMutation() {
   const queryClient = useQueryClient();
@@ -119,7 +120,17 @@ export function useClearTrailerUrlMutation() {
     mutationFn: async ({ doubanId }) => {
       console.log('[HeroBanner] localStorage中的URL也过期了，清除并重新获取');
 
-      // Update query cache - remove the expired URL
+      // 1. 清除服务端缓存
+      try {
+        await fetch(`/api/douban/refresh-trailer?id=${doubanId}`, {
+          method: 'DELETE',
+        });
+        console.log('[HeroBanner] 已清除服务端缓存');
+      } catch (error) {
+        console.error('[HeroBanner] 清除服务端缓存失败:', error);
+      }
+
+      // 2. 清除客户端缓存（localStorage）
       queryClient.setQueryData<Record<string, string>>(
         ['refreshedTrailerUrls'],
         (prev = {}) => {

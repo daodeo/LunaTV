@@ -292,7 +292,7 @@ function HeroBanner({
     return () => {
       clearTimeout(timer);
     };
-  }, [currentIndex, items, enableVideo]);
+  }, [currentIndex, enableVideo]);
 
   // Cleanup on unmount
   useEffect(() => {
